@@ -1,0 +1,28 @@
+# Don't push large files
+data/
+v1.0-mini/
+*.pt
+yolov5s.pt
+
+# Don't push virtual environment
+venv/
+env/
+
+# Don't push Python cache
+__pycache__/
+*.pyc
+*.pyo
+.Python
+*.egg-info/
+
+# Don't push Mac files
+.DS_Store
+.AppleDouble
+
+# Don't push IDE files
+.vscode/
+.idea/
+*.swp
+
+# Optional - push results (or don't, depending on preference)
+# results/  (uncomment if you don't want to push results)
