@@ -16,19 +16,14 @@ from src.evaluator import PerceptionEvaluator
 def main():
     """Run the complete evaluation pipeline"""
     
-    print("""
-╔═══════════════════════════════════════════════════════════════╗
-║                                                               ║
-║     PERCEPTION EVALUATION PIPELINE                           ║
-║     Autonomous Driving Object Detection Evaluation           ║
-║                                                               ║
-╚═══════════════════════════════════════════════════════════════╝
-    """)
+    print("\n" + "="*60)
+    print("Perception Evaluation Pipeline")
+    print("="*60)
     
     # Configuration
     DATA_ROOT = 'data/nuscenes'
     MODEL_NAME = 'yolov5s'
-    NUM_SAMPLES = 100  # Start with 10, increase later
+    NUM_SAMPLES = 10  # Start with 10, increase later
     IOU_THRESHOLD = 0.5
     OUTPUT_DIR = 'results'
     
@@ -53,26 +48,13 @@ Configuration:
         # Run evaluation
         evaluator.evaluate(num_samples=NUM_SAMPLES)
         
-        print(f"""
-╔═══════════════════════════════════════════════════════════════╗
-║  ✅ EVALUATION COMPLETE!                                      ║
-╚═══════════════════════════════════════════════════════════════╝
-
-📊 Results:
-   - Metrics: results/evaluation_results.json
-   - Plot: results/visualizations/per_class_ap.png
-
-📈 Next Steps:
-   1. Review the results
-   2. Increase NUM_SAMPLES for more comprehensive evaluation
-   3. Analyze per-class performance
-   4. Commit to GitHub
-
-💡 Tips:
-   - Start with 10-50 samples for testing
-   - Use 200-500 for comprehensive evaluation
-   - Each sample takes ~2-3 seconds (GPU) or 10-15 seconds (CPU)
-    """)
+        print("\n" + "="*60)
+        print("Evaluation complete")
+        print("="*60)
+        print("\nResults saved to:")
+        print("  - Metrics: results/evaluation_results.json")
+        print("  - Plot: results/visualizations/per_class_ap.png")
+        print("="*60 + "\n")
         
     except Exception as e:
         print(f"❌ Error: {e}")

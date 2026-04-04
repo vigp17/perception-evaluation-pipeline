@@ -21,14 +21,9 @@ from src.evaluator import PerceptionEvaluator
 def main():
     """Run complete fine-tuning pipeline"""
     
-    print("""
-╔═══════════════════════════════════════════════════════════════╗
-║                                                               ║
-║     PERCEPTION FINE-TUNING PIPELINE                          ║
-║     Fine-tune YOLOv5 on nuScenes Dataset                     ║
-║                                                               ║
-╚═══════════════════════════════════════════════════════════════╝
-    """)
+    print("\n" + "="*60)
+    print("Fine-tuning Pipeline")
+    print("="*60)
     
     # Configuration
     DATA_ROOT = 'data/nuscenes'
@@ -142,28 +137,15 @@ Configuration:
         
         print(f"\n✓ Comparison saved to finetuning_comparison.json")
         
-        print(f"""
-╔═══════════════════════════════════════════════════════════════╗
-║  ✅ FINE-TUNING COMPLETE!                                     ║
-╚═══════════════════════════════════════════════════════════════╝
-
-📊 Results:
-   - Baseline results: baseline_results/
-   - Fine-tuned results: finetuned_results/
-   - Training results: {TRAINING_RESULTS}/
-   - Comparison: finetuning_comparison.json
-
-📈 Next Steps:
-   1. Review comparison metrics
-   2. Analyze per-class improvements
-   3. Increase epochs for production (20-50)
-   4. Commit fine-tuning code to GitHub
-
-💡 Notes:
-   - Trained on {NUM_SAMPLES} samples for 5 epochs
-   - Evaluated on 50 test samples
-   - For production: increase epochs and dataset size
-    """)
+        print("\n" + "="*60)
+        print("Fine-tuning complete")
+        print("="*60)
+        print("\nResults:")
+        print(f"  Baseline mAP: {baseline_map:.3f}")
+        print(f"  Fine-tuned mAP: {finetuned_map:.3f}")
+        print(f"  Improvement: {improvement:+.3f}")
+        print(f"\nComparison saved to: finetuning_comparison.json")
+        print("="*60 + "\n")
         
         return 0
         
