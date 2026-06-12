@@ -76,6 +76,16 @@ class PerceptionEvaluator:
             # Get ground truths
             ground_truths = sample_data['objects']
             
+            # Map both label spaces to the shared canonical taxonomy.
+            # Without this, COCO names ('car') never match nuScenes names
+            # ('vehicle.car') and every class scores AP = 0.
+            from src.class_mapping import (
+                filter_and_map_predictions,
+                filter_and_map_ground_truths,
+            )
+            predictions = filter_and_map_predictions(predictions)
+            ground_truths = filter_and_map_ground_truths(ground_truths)
+
             # Organize by class
             for pred in predictions:
                 self.class_predictions[pred['class']].append(pred)

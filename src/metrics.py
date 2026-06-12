@@ -96,10 +96,18 @@ def compute_average_precision(
     recall = tp_cumsum / len(ground_truths)
     precision = tp_cumsum / (tp_cumsum + fp_cumsum)
     
-    # Compute AP (area under PR curve)
-    ap = np.trapz(precision, recall) if len(precision) > 0 else 0.0
+    # All-point interpolated AP (Pascal VOC 2010+ convention):
+    # take the precision envelope (monotonically non-increasing), then
+    # integrate over recall. Raw trapezoidal integration of the un-enveloped
+    # PR curve under-/over-estimates AP depending on confidence ordering.
+    mrec = np.concatenate(([0.0], recall, [recall[-1]] if len(recall) else [0.0]))
+    mpre = np.concatenate(([0.0], precision, [0.0]))
+    for i in range(len(mpre) - 2, -1, -1):
+        mpre[i] = max(mpre[i], mpre[i + 1])
+    indices = np.where(mrec[1:] != mrec[:-1])[0]
+    ap = float(np.sum((mrec[indices + 1] - mrec[indices]) * mpre[indices + 1]))
     
-    return float(ap), precision, recall
+    return ap, precision, recall
 
 
 def compute_map(

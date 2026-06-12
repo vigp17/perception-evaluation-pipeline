@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import List, Dict, Tuple
 from nuscenes import NuScenes
 from nuscenes.utils.data_classes import Box
-from nuscenes.utils.geometry_utils import view_points
+from nuscenes.utils.geometry_utils import view_points, BoxVisibility
 from tqdm import tqdm
 
 
@@ -39,65 +39,68 @@ class NuScenesLoader:
     def get_sample_image_and_objects(self, sample_token: str, 
                                      camera: str = 'CAM_FRONT') -> Dict:
         """
-        Get camera image and ground truth objects for a sample
-        
+        Get camera image and ground truth 2D boxes for a sample.
+
+        Uses nusc.get_sample_data(), which transforms each annotation box
+        through the full chain (global -> ego -> camera frame) and filters
+        to boxes visible in this camera. Projecting raw ann['translation']
+        (global/map coordinates) directly through the intrinsic matrix —
+        as a naive implementation does — produces meaningless pixel
+        coordinates, including huge negative values for objects behind
+        the camera.
+
         Args:
             sample_token: Token identifying the sample
             camera: Camera name (CAM_FRONT, CAM_BACK, etc)
-            
+
         Returns:
             Dict with 'image' and 'objects' keys
         """
         sample = self.nusc.get('sample', sample_token)
         camera_token = sample['data'][camera]
-        camera_data = self.nusc.get('sample_data', camera_token)
-        
+
+        # Boxes come back already in the camera frame, filtered to those
+        # with at least one corner visible in the image.
+        image_path, boxes, camera_intrinsic = self.nusc.get_sample_data(
+            camera_token, box_vis_level=BoxVisibility.ANY
+        )
+
         # Load image
-        image_path = os.path.join(self.data_root, camera_data['filename'])
         image = cv2.imread(image_path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        
-        # Get annotations
+        img_h, img_w = image.shape[:2]
+
         objects = []
-        for ann_token in sample['anns']:
-            ann = self.nusc.get('sample_annotation', ann_token)
-            
-            # Get 3D box
-            from nuscenes.utils.data_classes import Quaternion
-            box = Box(
-                ann['translation'],
-                ann['size'],
-                Quaternion(ann['rotation']),
-                name=ann['category_name']
-            )
-            
-            # Project to camera
-            camera_intrinsic = np.array(
-                self.nusc.get(
-                    'calibrated_sensor',
-                    camera_data['calibrated_sensor_token']
-                )['camera_intrinsic']
-            )
-            
-            corners_3d = box.corners()
+        for box in boxes:
+            corners_3d = box.corners()  # (3, 8) in camera frame
+
+            # Keep only corners in front of the camera plane; projecting
+            # negative-depth points flips signs and produces garbage.
+            in_front = corners_3d[2, :] > 0.1
+            if in_front.sum() < 1:
+                continue
+            corners_3d = corners_3d[:, in_front]
+
             corners_2d = view_points(
-                corners_3d,
-                camera_intrinsic,
-                normalize=True
+                corners_3d, camera_intrinsic, normalize=True
             )[:2, :]
-            
-            # Get 2D bounding box
-            x_min, x_max = corners_2d[0].min(), corners_2d[0].max()
-            y_min, y_max = corners_2d[1].min(), corners_2d[1].max()
-            
-            # Only include objects visible in camera
-            if x_min < 1600 and x_max > 0 and y_min < 900 and y_max > 0:
-                objects.append({
-                    'class': ann['category_name'],
-                    'bbox': [x_min, y_min, x_max, y_max],
-                    'confidence': 1.0,  # Ground truth
-                })
-        
+
+            # Axis-aligned 2D box, clipped to image bounds
+            x_min = float(np.clip(corners_2d[0].min(), 0, img_w))
+            x_max = float(np.clip(corners_2d[0].max(), 0, img_w))
+            y_min = float(np.clip(corners_2d[1].min(), 0, img_h))
+            y_max = float(np.clip(corners_2d[1].max(), 0, img_h))
+
+            # Skip degenerate boxes (fully clipped or sliver-thin)
+            if (x_max - x_min) < 2 or (y_max - y_min) < 2:
+                continue
+
+            objects.append({
+                'class': box.name,
+                'bbox': [x_min, y_min, x_max, y_max],
+                'confidence': 1.0,  # Ground truth
+            })
+
         return {
             'image': image,
             'objects': objects,

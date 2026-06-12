@@ -1,0 +1,22 @@
+{
+  "experiment": "nuScenes v1.0-trainval, CAM_FRONT keyframes, YOLOv8s",
+  "split_method": "official nuScenes scene split (no scene leakage train<->val)",
+  "num_train_images": 28130,
+  "num_val_images": 6019,
+  "num_val_instances": 53003,
+  "num_classes": 23,
+  "iou_threshold": 0.5,
+  "training": {"model": "yolov8s", "epochs": 40, "imgsz": 640, "batch": 16, "patience": 15, "device": "Tesla T4", "train_time_hours": 6.1},
+  "results": {
+    "baseline_pretrained": {"mAP50": 0.079, "per_class": {"human.pedestrian.adult": 0.224, "vehicle.bicycle": 0.073, "vehicle.bus.rigid": 0.512, "vehicle.car": 0.522, "vehicle.motorcycle": 0.074, "vehicle.truck": 0.261, "movable_object.barrier": 0.0, "movable_object.trafficcone": 0.0, "vehicle.trailer": 0.0, "vehicle.construction": 0.0}},
+    "finetuned": {"mAP50": 0.291, "mAP50_95": 0.152, "per_class_mAP50": {"human.pedestrian.adult": 0.497, "movable_object.barrier": 0.570, "movable_object.trafficcone": 0.565, "vehicle.bus.rigid": 0.672, "vehicle.car": 0.733, "vehicle.motorcycle": 0.386, "vehicle.trailer": 0.412, "vehicle.truck": 0.415, "vehicle.bicycle": 0.377, "vehicle.construction": 0.087}},
+    "improvement": {"mAP50_absolute": 0.212, "mAP50_relative_pct": 268.4}
+  },
+  "notes": [
+    "Baseline is pretrained YOLOv8s (COCO) remapped to nuScenes classes, same official val split.",
+    "Largest absolute gains on nuScenes-only classes COCO cannot predict: barrier +0.57, cone +0.57, trailer +0.41 (all from baseline 0.0).",
+    "Overall mAP50 averages 23 classes including very rare ones (animal: 4, ambulance: 11, child: 30) that depress the mean; common safety-relevant classes score 0.40-0.73.",
+    "Official scene split prevents train/val leakage.",
+    "Follows fixes to three pipeline bugs: COCO/nuScenes class-name mismatch in the evaluator, non-standard AP integration, and missing global->ego->camera box projection in loader and converter."
+  ]
+}

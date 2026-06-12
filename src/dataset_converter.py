@@ -15,7 +15,8 @@ from nuscenes.utils.geometry_utils import view_points
 class NuScenesYOLOConverter:
     """Convert nuScenes to YOLO format"""
     
-    def __init__(self, data_root: str, output_dir: str = 'yolo_dataset'):
+    def __init__(self, data_root: str, output_dir: str = 'yolo_dataset',
+                 version: str = 'v1.0-mini'):
         """
         Initialize converter
         
@@ -34,7 +35,7 @@ class NuScenesYOLOConverter:
         (self.output_dir / 'labels' / 'val').mkdir(parents=True, exist_ok=True)
         
         # Load nuScenes
-        self.nusc = NuScenes(version='v1.0-mini', dataroot=data_root, verbose=False)
+        self.nusc = NuScenes(version=version, dataroot=data_root, verbose=False)
         
         # Map nuScenes classes to YOLO format
         self.class_mapping = self._create_class_mapping()
@@ -76,81 +77,72 @@ class NuScenesYOLOConverter:
         print(f"✓ Conversion complete! Data saved to {self.output_dir}")
     
     def _convert_sample(self, sample, split: str):
-        """Convert a single sample"""
-        
-        # Get camera data
-        camera_token = sample['data']['CAM_FRONT']
-        camera_data = self.nusc.get('sample_data', camera_token)
-        image_path = os.path.join(self.data_root, camera_data['filename'])
-        
-        # Copy image
+        """Convert a single sample using the devkit's camera-frame boxes.
+
+        Uses nusc.get_sample_data() so boxes are transformed through the
+        full global -> ego -> camera chain and visibility-filtered. The
+        previous implementation projected global/map coordinates directly
+        through the intrinsic matrix, producing garbage labels.
+        """
         import shutil
+        from nuscenes.utils.geometry_utils import BoxVisibility
+
+        camera_token = sample['data']['CAM_FRONT']
+
+        # Boxes already in camera frame, filtered to visible ones
+        image_path, boxes, camera_intrinsic = self.nusc.get_sample_data(
+            camera_token, box_vis_level=BoxVisibility.ANY
+        )
+
         sample_name = f"{sample['token']}.jpg"
         output_image = self.output_dir / 'images' / split / sample_name
-        
         try:
             shutil.copy(image_path, output_image)
-        except:
+        except (OSError, shutil.Error):
             return  # Skip if image copy fails
-        
-        # Get annotations
+
+        img_w, img_h = 1600, 900
         annotations = []
-        for ann_token in sample['anns']:
-            ann = self.nusc.get('sample_annotation', ann_token)
-            
-            # Get 3D box
-            from nuscenes.utils.data_classes import Quaternion
-            box = Box(
-                ann['translation'],
-                ann['size'],
-                Quaternion(ann['rotation']),
-                name=ann['category_name']
-            )
-            
-            # Project to camera
-            camera_intrinsic = np.array(
-                self.nusc.get(
-                    'calibrated_sensor',
-                    camera_data['calibrated_sensor_token']
-                )['camera_intrinsic']
-            )
-            
+        for box in boxes:
             corners_3d = box.corners()
+
+            # Drop corners behind the camera before projecting
+            in_front = corners_3d[2, :] > 0.1
+            if in_front.sum() < 1:
+                continue
             corners_2d = view_points(
-                corners_3d,
-                camera_intrinsic,
-                normalize=True
+                corners_3d[:, in_front], camera_intrinsic, normalize=True
             )[:2, :]
-            
-            # Get 2D bounding box
-            x_min, x_max = corners_2d[0].min(), corners_2d[0].max()
-            y_min, y_max = corners_2d[1].min(), corners_2d[1].max()
-            
-            # Only include objects visible in camera
-            if x_min < 1600 and x_max > 0 and y_min < 900 and y_max > 0:
-                # Convert to YOLO format (center_x, center_y, width, height, normalized)
-                img_width, img_height = 1600, 900
-                
-                center_x = (x_min + x_max) / 2 / img_width
-                center_y = (y_min + y_max) / 2 / img_height
-                width = (x_max - x_min) / img_width
-                height = (y_max - y_min) / img_height
-                
-                # Clamp to [0, 1]
-                center_x = max(0, min(1, center_x))
-                center_y = max(0, min(1, center_y))
-                width = max(0, min(1, width))
-                height = max(0, min(1, height))
-                
-                class_id = self.class_mapping[ann['category_name']]
-                annotations.append(f"{class_id} {center_x} {center_y} {width} {height}")
-        
-        # Save annotations
+
+            # Clip the pixel box to image bounds BEFORE normalizing —
+            # clamping normalized values after the fact distorts
+            # partially-visible boxes.
+            x_min = float(np.clip(corners_2d[0].min(), 0, img_w))
+            x_max = float(np.clip(corners_2d[0].max(), 0, img_w))
+            y_min = float(np.clip(corners_2d[1].min(), 0, img_h))
+            y_max = float(np.clip(corners_2d[1].max(), 0, img_h))
+
+            # Skip degenerate boxes (fully clipped or sliver-thin)
+            if (x_max - x_min) < 2 or (y_max - y_min) < 2:
+                continue
+
+            center_x = (x_min + x_max) / 2 / img_w
+            center_y = (y_min + y_max) / 2 / img_h
+            width = (x_max - x_min) / img_w
+            height = (y_max - y_min) / img_h
+
+            class_id = self.class_mapping[box.name]
+            annotations.append(
+                f"{class_id} {center_x:.6f} {center_y:.6f} "
+                f"{width:.6f} {height:.6f}"
+            )
+
         if annotations:
-            label_path = self.output_dir / 'labels' / split / f"{sample['token']}.txt"
+            label_path = (self.output_dir / 'labels' / split
+                          / f"{sample['token']}.txt")
             with open(label_path, 'w') as f:
                 f.write('\n'.join(annotations))
-    
+
     def _save_classes(self):
         """Save class names to file"""
         classes_file = self.output_dir / 'classes.txt'

@@ -7,3 +7,15 @@ __pycache__/
 .DS_Store
 SIMPLE_START_Guide.md
 TROUBLESHOOTING_Guide.md
+# data and artifacts (never commit)
+v1.0-mini.tgz
+*.tgz
+yolo_dataset/
+yolo_dataset_full/
+runs/
+data/
+venv/
+__pycache__/
+*.pyc
+.v1.0-mini.txt
+req_notorch.txt
