@@ -1,13 +1,4 @@
-data/
-v1.0-mini/
-venv/
-*.pt
-__pycache__/
-*.pyc
-.DS_Store
-SIMPLE_START_Guide.md
-TROUBLESHOOTING_Guide.md
-# data and artifacts (never commit)
+# data and artifacts
 v1.0-mini.tgz
 *.tgz
 yolo_dataset/
@@ -19,3 +10,18 @@ __pycache__/
 *.pyc
 .v1.0-mini.txt
 req_notorch.txt
+
+# local / private — never commit
+*.pem
+perception-evaluation-key.pem
+Lucid_Interview_Prep_Guide.md
+TROUBLESHOOTING_Guide.md
+SIMPLE_START_Guide.md
+training_results/
+diagnose.py
+predictions/
+.DS_Store
+custom_training_results/
+v1.0-mini/
+yolov5s.pt
+*.pt
