@@ -1,0 +1,63 @@
+{
+  "operating_point": {
+    "iou": 0.5,
+    "conf": 0.25
+  },
+  "condition_sliced": {
+    "day": {
+      "gt": 50135,
+      "recall": 0.6116,
+      "precision": 0.7053
+    },
+    "night": {
+      "gt": 2868,
+      "recall": 0.5216,
+      "precision": 0.67
+    },
+    "clear": {
+      "gt": 42734,
+      "recall": 0.605,
+      "precision": 0.6868
+    },
+    "rain": {
+      "gt": 10269,
+      "recall": 0.6144,
+      "precision": 0.7814
+    },
+    "day_clear": {
+      "gt": 40234,
+      "recall": 0.6087,
+      "precision": 0.6875
+    },
+    "day_rain": {
+      "gt": 9901,
+      "recall": 0.6238,
+      "precision": 0.7856
+    },
+    "night_clear": {
+      "gt": 2500,
+      "recall": 0.5452,
+      "precision": 0.6744
+    },
+    "night_rain": {
+      "gt": 368,
+      "recall": 0.3614,
+      "precision": 0.6274
+    }
+  },
+  "distance_binned": {
+    "0-20": {
+      "gt": 13239,
+      "recall": 0.7905
+    },
+    "20-40": {
+      "gt": 20195,
+      "recall": 0.651
+    },
+    "40-inf": {
+      "gt": 19569,
+      "recall": 0.4369
+    }
+  },
+  "num_val_images": 6019
+}
