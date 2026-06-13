@@ -24,9 +24,9 @@ from nuscenes.utils.splits import train as TRAIN_SCENES, val as VAL_SCENES
 sys.path.insert(0, str(Path(__file__).parent))
 from src.dataset_converter import NuScenesYOLOConverter
 
-DATA_ROOT = '/data/nuscenes'
+DATA_ROOT = 'data/nuscenes'
 VERSION = 'v1.0-trainval'
-OUTPUT = '/data/yolo_dataset_full'
+OUTPUT = 'data/yolo_dataset_full'
 IMG_W, IMG_H = 1600, 900
 
 
