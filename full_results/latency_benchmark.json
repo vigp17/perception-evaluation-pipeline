@@ -1,0 +1,21 @@
+{
+  "gpu": "Tesla T4",
+  "imgsz": 640,
+  "runs": 200,
+  "results": [
+    {
+      "engine": "PyTorch FP32",
+      "mean_ms": 10.09,
+      "p50_ms": 10.08,
+      "p99_ms": 10.25,
+      "fps": 99.1
+    },
+    {
+      "engine": "TensorRT FP16",
+      "mean_ms": 4.46,
+      "p50_ms": 4.46,
+      "p99_ms": 4.53,
+      "fps": 224.2
+    }
+  ]
+}

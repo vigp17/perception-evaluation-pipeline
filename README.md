@@ -212,6 +212,30 @@ distant, and occluded objects, consistent with the distance-binned result above.
 
 ![Example failure case](full_results/vv_analysis/failures/failure_00.jpg)
 
+
+## Inference latency
+
+Detection accuracy only matters if the model runs fast enough for real-time
+perception. The fine-tuned model was benchmarked on the T4 in its training
+format (PyTorch FP32) and its deployment format (TensorRT FP16), at 640x640
+over 200 timed runs with GPU warm-up excluded.
+
+| Engine | Mean latency | p99 latency | Throughput |
+|---|---|---|---|
+| PyTorch FP32 | 10.09 ms | 10.25 ms | 99 FPS |
+| TensorRT FP16 | 4.46 ms | 4.53 ms | 224 FPS |
+
+TensorRT FP16 optimization gives a **2.26x throughput increase** (99 -> 224 FPS)
+over raw PyTorch. At 4.46 ms mean latency the model runs an order of magnitude
+faster than the 10-20 Hz typical of on-vehicle perception, leaving headroom for
+multiple camera streams or downstream tracking and fusion on the same hardware.
+The p99 latency (4.53 ms) sits almost on top of the mean, indicating tight,
+predictable timing — important for safety-critical real-time systems where tail
+latency, not average latency, determines worst-case behavior.
+
+Benchmarked on an NVIDIA T4. See `benchmark_latency.py` and
+`analysis/latency_benchmark.json`.
+
 ## Notes and limitations
 
 - CAM_FRONT only. Multi-camera coverage is a natural extension.
