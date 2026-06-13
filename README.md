@@ -163,6 +163,55 @@ yolo detect train data=/data/yolo_dataset_full/data.yaml \
 python run_baseline_full.py
 ```
 
+
+## Operational evaluation
+
+A single mAP number hides where a perception model actually fails. The fine-tuned
+model was evaluated by operating condition and by object distance — the slices
+that matter for safety — using the same validation split. (Operating point:
+IoU 0.5, confidence 0.25.)
+
+### Performance by condition
+
+| Condition | Ground-truth instances | Recall | Precision |
+|---|---|---|---|
+| Day | 50,135 | 0.612 | 0.705 |
+| Night | 2,868 | 0.522 | 0.670 |
+| Clear | 42,734 | 0.605 | 0.687 |
+| Rain | 10,269 | 0.614 | 0.781 |
+| Day + clear | 40,234 | 0.609 | 0.688 |
+| Day + rain | 9,901 | 0.624 | 0.786 |
+| Night + clear | 2,500 | 0.545 | 0.674 |
+| Night + rain | 368 | 0.361 | 0.627 |
+
+Recall drops ~9 points at night (0.612 -> 0.522), and the night+rain combination
+is worst (0.361) — though that bucket is small (368 instances), so it is
+indicative rather than conclusive. Rain alone does not degrade recall and shows
+higher precision, likely because rain scenes in nuScenes skew toward daytime
+highway driving with larger, clearer objects.
+
+### Performance by object distance
+
+| Range | Ground-truth instances | Recall |
+|---|---|---|
+| 0-20 m | 13,239 | 0.790 |
+| 20-40 m | 20,195 | 0.651 |
+| 40 m+ | 19,569 | 0.437 |
+
+Recall nearly halves from near to far range. This is the most safety-relevant
+result: the model reliably detects nearby objects and progressively misses
+distant ones. Distance is taken from the camera-frame forward coordinate of each
+3D annotation, so this measures true range, not apparent size.
+
+### Failure cases
+
+Eight worst-case validation frames (most missed detections plus false positives)
+are saved in `full_results/vv_analysis/`. Legend: green = detected ground truth,
+red = missed ground truth, yellow = false positive. Misses concentrate on small,
+distant, and occluded objects, consistent with the distance-binned result above.
+
+![Example failure case](full_results/vv_analysis/failures/failure_00.jpg)
+
 ## Notes and limitations
 
 - CAM_FRONT only. Multi-camera coverage is a natural extension.
