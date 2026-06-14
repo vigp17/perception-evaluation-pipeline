@@ -1,0 +1,30 @@
+{
+  "overall": {
+    "mota": 0.0693191865605659,
+    "motp": null,
+    "idf1": 0.21792561479574554,
+    "num_switches": 12906.0,
+    "num_fragmentations": 1315.0,
+    "mostly_tracked": 1468.0,
+    "mostly_lost": 841.0,
+    "num_false_positives": 9285.0,
+    "num_misses": 14650.0,
+    "num_objects": 39585.0
+  },
+  "by_condition": {
+    "day": {
+      "mota": 0.0643,
+      "idf1": 0.2135,
+      "switches": 12523,
+      "objects": 37772,
+      "switches_per_1k": 331.54
+    },
+    "night": {
+      "mota": 0.1737,
+      "idf1": 0.3133,
+      "switches": 383,
+      "objects": 1813,
+      "switches_per_1k": 211.25
+    }
+  }
+}

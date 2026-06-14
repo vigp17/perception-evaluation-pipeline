@@ -236,6 +236,52 @@ latency, not average latency, determines worst-case behavior.
 Benchmarked on an NVIDIA T4. See `benchmark_latency.py` and
 `analysis/latency_benchmark.json`.
 
+
+## Multi-object tracking
+
+ByteTrack (via Ultralytics) was run on top of the fine-tuned detector across
+each of the 150 validation scenes in temporal order, evaluated with the
+MOTChallenge-standard `motmetrics` library. Ground-truth track identity comes
+from nuScenes' `instance_token` (stable per object across a scene). Evaluation
+is restricted to the 8 dynamic classes the detector targets (vehicles,
+pedestrians) and uses per-scene accumulation so identities never bleed across
+scene boundaries.
+
+| Metric | Value |
+|---|---|
+| MOTA | 0.069 |
+| IDF1 | 0.218 |
+| ID switches | 12,906 |
+| Fragmentations | 1,315 |
+| Mostly tracked | 1,468 |
+| Mostly lost | 841 |
+| Objects | 39,585 |
+
+| Condition | MOTA | IDF1 | Switches | Objects |
+|---|---|---|---|---|
+| Day | 0.064 | 0.213 | 12,523 | 37,772 |
+| Night | 0.174 | 0.313 | 383 | 1,813 |
+
+### Why MOTA is low, and why that's the real finding
+
+A frame-level diagnostic on individual scenes shows ByteTrack maintains a
+reasonable number of track ids (15 distinct ids for ~8 simultaneous objects
+over a 40-frame scene) — track identity is not wildly unstable at the tracker
+level. The low MOTA comes from frame-to-frame *association* churn: nuScenes
+keyframes are sampled at 2 Hz, so objects move substantially between frames,
+and IoU-based association (tuned for ~30 fps video) produces borderline
+matches (IoU 0.5-0.75) in cluttered scenes that flip between nearby objects.
+
+This is a known limitation of 2D image-plane tracking on sparse keyframe data
+— and it is the reason nuScenes' own tracking benchmark evaluates 3D tracking
+with motion-compensated association rather than 2D image tracking. This result
+empirically reproduces that motivation. Notably, night MOTA (0.174) is *higher*
+than day (0.064) despite worse raw detection recall at night (see Operational
+evaluation) — likely because night scenes contain fewer, more isolated objects,
+reducing association ambiguity even though fewer objects are detected overall.
+
+See `evaluate_tracking.py`, `tracking_metrics.py`, and
+`analysis/tracking_eval.json`.
 ## Notes and limitations
 
 - CAM_FRONT only. Multi-camera coverage is a natural extension.
